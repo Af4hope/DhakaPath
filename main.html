@@ -1,0 +1,547 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DhakaPath | Smart Urban Transit</title>
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+  <script src = "java.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  
+</head>
+
+<body>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="logo">
+      <div class="logo-icon">↗</div>
+      Dhaka<span>Path</span>
+    </div>
+
+    <nav class="nav-links">
+      <a href="#home">Dashboard</a>
+      <a href="#planner">Route Planner</a>
+      <a href="#map-section">City Map</a>
+      <a href="#alerts">Street Alerts</a>
+    </nav>
+
+    <div class="live-badge">● City Explorer</div>
+  </header>
+
+  <main class="container" id="home">
+
+    <!-- Welcome -->
+    <section class="welcome">
+      <div class="eyebrow">SMART CITY · DHAKA, BANGLADESH</div>
+      <h1>Your city. Your route.<br>Smarter journeys.</h1>
+      <p>
+        Explore transit options, estimate your travel costs, and stay
+        informed about reported street disruptions across Dhaka.
+      </p>
+    </section>
+
+    <!-- Overview cards -->
+    <section class="stats">
+      <div class="stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Transit modes</span>
+          <div class="stat-icon">↗</div>
+        </div>
+        <div class="stat-number">04</div>
+        <div class="stat-note">Bus · Metro · Leguna · Rickshaw</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Reported street alerts</span>
+          <div class="stat-icon">⚠</div>
+        </div>
+        <div class="stat-number" id="alert-count">02</div>
+        <div class="stat-note">Sample reports for demonstration</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Route planner</span>
+          <div class="stat-icon">⌁</div>
+        </div>
+        <div class="stat-number">Ready</div>
+        <div class="stat-note">Plan your next journey</div>
+      </div>
+    </section>
+
+    <!-- Planner and map -->
+    <section class="main-grid">
+
+      <div>
+        <div class="panel" id="planner">
+          <h2>Plan your journey</h2>
+          <p class="panel-description">
+            Select your locations to explore a suggested route.
+          </p>
+
+          <div class="field">
+            <label for="origin">Starting point</label>
+            <select id="origin">
+              <option value="Mirpur 10">Mirpur 10</option>
+              <option value="Uttara">Uttara</option>
+              <option value="Farmgate">Farmgate</option>
+              <option value="Motijheel">Motijheel</option>
+              <option value="Dhanmondi">Dhanmondi</option>
+              <option value="Shahbagh">Shahbagh</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="destination">Destination</label>
+            <select id="destination">
+              <option value="Farmgate">Farmgate</option>
+              <option value="Mirpur 10">Mirpur 10</option>
+              <option value="Uttara">Uttara</option>
+              <option value="Motijheel">Motijheel</option>
+              <option value="Dhanmondi">Dhanmondi</option>
+              <option value="Shahbagh">Shahbagh</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="transport">Preferred transport</label>
+            <select id="transport">
+              <option value="Metro">Metro Rail</option>
+              <option value="Bus">Local Bus</option>
+              <option value="Leguna">Leguna</option>
+              <option value="Rickshaw">Rickshaw</option>
+            </select>
+          </div>
+
+          <button class="primary-btn" id="search-route">
+            Find my route →
+          </button>
+
+          <div class="result" id="route-result" aria-live="polite">
+            <h3>Journey estimate</h3>
+            <div class="result-row">
+              <span>Distance</span>
+              <strong id="distance">—</strong>
+            </div>
+            <div class="result-row">
+              <span>Estimated time</span>
+              <strong id="duration">—</strong>
+            </div>
+            <div class="result-row">
+              <span>Estimated fare</span>
+              <strong id="fare">—</strong>
+            </div>
+            <p class="notice">
+              Indicative estimates for the demo, not verified live
+              schedules, official fares, or turn-by-turn directions.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="map-panel" id="map-section">
+        <div class="map-heading">
+          <div>
+            <h2>Dhaka city map</h2>
+            <p>Explore locations and reported disruptions</p>
+          </div>
+          <span class="map-tag">OPEN MAP</span>
+        </div>
+
+        <div id="map"></div>
+
+        <div class="map-legend">
+          <div class="legend-item">
+            <span class="dot"></span> Route / location
+          </div>
+          <div class="legend-item">
+            <span class="dot red"></span> Roadblock report
+          </div>
+          <div class="legend-item">
+            <span class="dot orange"></span> Waterlogging report
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Street alerts -->
+    <section class="alerts-section" id="alerts">
+      <div class="welcome">
+        <div class="eyebrow">COMMUNITY REPORTING</div>
+        <h1 style="font-size: 28px;">Street status & alerts</h1>
+        <p>Report a road issue to help fellow commuters make better decisions.</p>
+      </div>
+
+      <div class="alerts-grid">
+
+        <div class="panel">
+          <h2>Report a street issue</h2>
+          <p class="panel-description">
+            Submit an observation from your area.
+          </p>
+
+          <form id="alert-form">
+            <div class="alert-form">
+
+              <div class="field">
+                <label for="alert-location">Location</label>
+                <select id="alert-location" required>
+                  <option value="Mirpur 10">Mirpur 10</option>
+                  <option value="Uttara">Uttara</option>
+                  <option value="Farmgate">Farmgate</option>
+                  <option value="Motijheel">Motijheel</option>
+                  <option value="Dhanmondi">Dhanmondi</option>
+                  <option value="Shahbagh">Shahbagh</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="alert-type">Issue type</label>
+                <select id="alert-type" required>
+                  <option value="Waterlogging">Waterlogging</option>
+                  <option value="Roadblock">Roadblock</option>
+                  <option value="Traffic jam">Traffic jam</option>
+                  <option value="Construction">Construction</option>
+                </select>
+              </div>
+
+              <div class="field full">
+                <label for="alert-description">Description</label>
+                <input id="alert-description"
+                  type="text"
+                  maxlength="180"
+                  placeholder="Describe what you observed..."
+                  required>
+              </div>
+
+              <div class="full">
+                <button class="primary-btn" type="submit">
+                  + Submit street report
+                </button>
+              </div>
+
+            </div>
+          </form>
+
+          <p class="notice">
+            Reports are stored in this page session only. They are
+            community-submitted and are not independently verified.
+          </p>
+        </div>
+
+        <div class="panel">
+          <h2>Recent street reports</h2>
+          <p class="panel-description">
+            Demonstration reports and new submissions.
+          </p>
+
+          <div class="alerts-list" id="alerts-list">
+
+            <div class="alert-item">
+              <div class="alert-symbol">🌧</div>
+              <div>
+                <h3>Waterlogging · Dhanmondi</h3>
+                <p>Sample report for demonstration purposes.</p>
+                <span class="alert-status">UNVERIFIED SAMPLE</span>
+              </div>
+            </div>
+
+            <div class="alert-item">
+              <div class="alert-symbol">🚧</div>
+              <div>
+                <h3>Roadblock · Farmgate</h3>
+                <p>Sample report for demonstration purposes.</p>
+                <span class="alert-status">UNVERIFIED SAMPLE</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <strong>DhakaPath</strong> — Live Urban Transit & Route Intelligence
+    <br><br>
+    Built for IAIT National IT Fest 2026 · Smart City Hackathon
+    <br><br>
+    Map data © OpenStreetMap contributors.
+    Estimates and sample reports are for demonstration only.
+  </footer>
+
+  <!-- Leaflet Map JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // Approximate coordinates of selected Dhaka locations.
+    const locations = {
+      "Mirpur 10": [23.8067, 90.3686],
+      "Uttara": [23.8759, 90.3795],
+      "Farmgate": [23.7578, 90.3890],
+      "Motijheel": [23.7330, 90.4172],
+      "Dhanmondi": [23.7461, 90.3742],
+      "Shahbagh": [23.7389, 90.3958]
+    };
+
+    // Initialize the interactive map.
+    const map = L.map("map").setView(
+      [23.7806, 90.3900], 12
+    );
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }
+    ).addTo(map);
+
+    // Store the route and report markers.
+    let routeLine = null;
+    let routeMarkers = [];
+
+    // Add approximate demonstration markers.
+    L.marker(locations["Mirpur 10"])
+      .addTo(map)
+      .bindPopup("Mirpur 10");
+
+    L.marker(locations["Farmgate"])
+      .addTo(map)
+      .bindPopup("Farmgate");
+
+    L.circleMarker(locations["Dhanmondi"], {
+      radius: 8,
+      color: "#e9a23b",
+      fillColor: "#e9a23b",
+      fillOpacity: 0.9
+    }).addTo(map)
+      .bindPopup("Sample waterlogging report · Dhanmondi");
+
+    L.circleMarker(locations["Farmgate"], {
+      radius: 8,
+      color: "#e05252",
+      fillColor: "#e05252",
+      fillOpacity: 0.9
+    }).addTo(map)
+      .bindPopup("Sample roadblock report · Farmgate");
+
+    // Calculate straight-line distance between two points.
+    function calculateDistance(a, b) {
+      const radians = value => value * Math.PI / 180;
+      const earthRadius = 6371;
+
+      const lat1 = radians(a[0]);
+      const lat2 = radians(b[0]);
+      const deltaLat = radians(b[0] - a[0]);
+      const deltaLng = radians(b[1] - a[1]);
+
+      const h =
+        Math.sin(deltaLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) *
+        Math.sin(deltaLng / 2) ** 2;
+
+      return earthRadius * 2 *
+        Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    }
+
+    // Search for a suggested demonstration route.
+    document.getElementById("search-route")
+      .addEventListener("click", function () {
+
+        const origin = document.getElementById("origin").value;
+        const destination =
+          document.getElementById("destination").value;
+        const transport =
+          document.getElementById("transport").value;
+
+        if (origin === destination) {
+          alert("Please select two different locations.");
+          return;
+        }
+
+        const start = locations[origin];
+        const end = locations[destination];
+
+        // Straight-line distance is not actual road distance.
+        const distance = calculateDistance(start, end);
+
+        // Rough demo multipliers, not real-time travel estimates.
+        const roadMultiplier = {
+          "Metro": 1.35,
+          "Bus": 1.5,
+          "Leguna": 1.45,
+          "Rickshaw": 1.3
+        };
+
+        const speed = {
+          "Metro": 28,
+          "Bus": 12,
+          "Leguna": 14,
+          "Rickshaw": 8
+        };
+
+        const farePerKm = {
+          "Metro": 8,
+          "Bus": 5,
+          "Leguna": 12,
+          "Rickshaw": 30
+        };
+
+        const estimatedDistance =
+          distance * roadMultiplier[transport];
+
+        const minutes = Math.max(
+          5,
+          Math.round(estimatedDistance / speed[transport] * 60)
+        );
+
+        const fare = Math.max(
+          20,
+          Math.round(estimatedDistance * farePerKm[transport])
+        );
+
+        document.getElementById("distance").textContent =
+          estimatedDistance.toFixed(1) + " km";
+
+        document.getElementById("duration").textContent =
+          minutes + " min";
+
+        document.getElementById("fare").textContent =
+          "৳" + fare;
+
+        document.getElementById("route-result").style.display =
+          "block";
+
+        // Remove the previous suggested route.
+        if (routeLine) {
+          map.removeLayer(routeLine);
+        }
+
+        routeMarkers.forEach(marker => map.removeLayer(marker));
+        routeMarkers = [];
+
+        // Draw a straight line between the selected places.
+        // This is illustrative, not road-following navigation.
+        routeLine = L.polyline([start, end], {
+          color: "#087f70",
+          weight: 5,
+          opacity: 0.85,
+          dashArray: "10, 8"
+        }).addTo(map);
+
+        routeMarkers.push(
+          L.marker(start).addTo(map)
+            .bindPopup("Start: " + origin),
+          L.marker(end).addTo(map)
+            .bindPopup("Destination: " + destination)
+        );
+
+        map.fitBounds(routeLine.getBounds(), {
+          padding: [35, 35]
+        });
+      });
+
+    // Add a community street report to the page.
+    document.getElementById("alert-form")
+      .addEventListener("submit", function (event) {
+
+        event.preventDefault();
+
+        const location =
+          document.getElementById("alert-location").value;
+        const type =
+          document.getElementById("alert-type").value;
+        const description =
+          document.getElementById("alert-description").value.trim();
+
+        if (!description) {
+          alert("Please enter a description.");
+          return;
+        }
+
+        const icons = {
+          "Waterlogging": "🌧",
+          "Roadblock": "🚧",
+          "Traffic jam": "🚗",
+          "Construction": "🏗"
+        };
+
+        // Create elements safely without inserting raw HTML.
+        const item = document.createElement("div");
+        item.className = "alert-item";
+
+        const symbol = document.createElement("div");
+        symbol.className = "alert-symbol";
+        symbol.textContent = icons[type];
+
+        const content = document.createElement("div");
+
+        const heading = document.createElement("h3");
+        heading.textContent = type + " · " + location;
+
+        const paragraph = document.createElement("p");
+        paragraph.textContent = description;
+
+        const status = document.createElement("span");
+        status.className = "alert-status";
+        status.textContent = "COMMUNITY REPORT · UNVERIFIED";
+
+        content.append(heading, paragraph, status);
+        item.append(symbol, content);
+
+        document.getElementById("alerts-list")
+          .prepend(item);
+
+        // Add the submitted report to the map.
+        const colors = {
+          "Waterlogging": "#e9a23b",
+          "Roadblock": "#e05252",
+          "Traffic jam": "#d97706",
+          "Construction": "#7c68c4"
+        };
+
+        L.circleMarker(locations[location], {
+          radius: 9,
+          color: colors[type],
+          fillColor: colors[type],
+          fillOpacity: 0.85
+        }).addTo(map)
+          .bindPopup(
+            "<strong>" + type + "</strong><br>" +
+            location + "<br>" + description
+          );
+
+        // Update the report counter.
+        const count = document.querySelectorAll(
+          "#alerts-list .alert-item"
+        ).length;
+
+        document.getElementById("alert-count").textContent =
+          String(count).padStart(2, "0");
+
+        this.reset();
+
+        alert("Report added to this demo. It has not been verified.");
+      });
+  </script>
+
+</body>
+</html>
